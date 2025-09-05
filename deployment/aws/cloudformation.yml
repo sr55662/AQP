@@ -1,4 +1,575 @@
-# AWS CloudFormation Templates and Deployment Scripts
-# [IMPORT NEEDED FROM PREVIOUS SESSION]
-# Import artifact: aws-infrastructure
-# This file should contain AWS infrastructure setup
+# deployment/aws/cloudformation-template.yaml
+# Complete AWS infrastructure for AQP scalable deployment
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Agentic Quantitative Platform - Scalable AWS Infrastructure'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: 'prod'
+    AllowedValues: ['dev', 'staging', 'prod']
+  
+  InstanceType:
+    Type: String
+    Default: 't3.large'
+    Description: 'EC2 instance type for compute workloads'
+  
+  NotificationEmail:
+    Type: String
+    Description: 'Email for system notifications'
+
+Mappings:
+  EnvironmentMap:
+    dev:
+      InstanceCount: 1
+      DBInstanceClass: 'db.t3.micro'
+    staging:
+      InstanceCount: 2
+      DBInstanceClass: 'db.t3.small'
+    prod:
+      InstanceCount: 3
+      DBInstanceClass: 'db.t3.medium'
+
+Resources:
+  # ========================================
+  # NETWORKING
+  # ========================================
+  
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: '10.0.0.0/16'
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'aqp-vpc-${Environment}'
+  
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: '10.0.1.0/24'
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'aqp-public-subnet-1-${Environment}'
+  
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: '10.0.2.0/24'
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'aqp-public-subnet-2-${Environment}'
+  
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: '10.0.3.0/24'
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub 'aqp-private-subnet-1-${Environment}'
+  
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: '10.0.4.0/24'
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub 'aqp-private-subnet-2-${Environment}'
+  
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub 'aqp-igw-${Environment}'
+  
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+  
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'aqp-public-rt-${Environment}'
+  
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+  
+  PublicSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+  
+  PublicSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  # ========================================
+  # S3 BUCKETS
+  # ========================================
+  
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'aqp-data-${Environment}-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 30
+          - Id: ArchiveOldData
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 30
+                StorageClass: STANDARD_IA
+              - TransitionInDays: 90
+                StorageClass: GLACIER
+  
+  ResultsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'aqp-results-${Environment}-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: ['*']
+            AllowedMethods: [GET, PUT, POST]
+            AllowedHeaders: ['*']
+            MaxAge: 3000
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+
+  # ========================================
+  # DYNAMODB TABLES
+  # ========================================
+  
+  JobsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'aqp-jobs-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: request_id
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: S
+      KeySchema:
+        - AttributeName: request_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: created-at-index
+          KeySchema:
+            - AttributeName: created_at
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  StrategiesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'aqp-strategies-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: strategy_id
+          AttributeType: S
+        - AttributeName: sharpe_ratio
+          AttributeType: N
+      KeySchema:
+        - AttributeName: strategy_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: sharpe-ratio-index
+          KeySchema:
+            - AttributeName: sharpe_ratio
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ========================================
+  # IAM ROLES & POLICIES
+  # ========================================
+  
+  AQPExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'AQP-ExecutionRole-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - ec2.amazonaws.com
+                - ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: AQPDataAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub '${DataBucket}/*'
+                  - !Sub '${ResultsBucket}/*'
+                  - !GetAtt DataBucket.Arn
+                  - !GetAtt ResultsBucket.Arn
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt JobsTable.Arn
+                  - !GetAtt StrategiesTable.Arn
+                  - !Sub '${JobsTable.Arn}/index/*'
+                  - !Sub '${StrategiesTable.Arn}/index/*'
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref NotificationTopic
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+
+  # ========================================
+  # LAMBDA FUNCTIONS
+  # ========================================
+  
+  StrategyAnalysisFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'aqp-strategy-analysis-${Environment}'
+      Runtime: python3.9
+      Handler: aws_orchestrator.lambda_handler
+      Role: !GetAtt AQPExecutionRole.Arn
+      Code:
+        ZipFile: |
+          # Placeholder - actual code would be deployed via CI/CD
+          import json
+          def lambda_handler(event, context):
+              return {'statusCode': 200, 'body': json.dumps('AQP Lambda Ready')}
+      Timeout: 900  # 15 minutes
+      MemorySize: 3008  # Maximum memory for CPU-intensive tasks
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          DATA_BUCKET: !Ref DataBucket
+          RESULTS_BUCKET: !Ref ResultsBucket
+          JOBS_TABLE: !Ref JobsTable
+          STRATEGIES_TABLE: !Ref StrategiesTable
+          NOTIFICATION_TOPIC: !Ref NotificationTopic
+      ReservedConcurrencyLimit: 10
+      DeadLetterQueue:
+        TargetArn: !GetAtt DeadLetterQueue.Arn
+
+  DataIngestionFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'aqp-data-ingestion-${Environment}'
+      Runtime: python3.9
+      Handler: data_ingestion.lambda_handler
+      Role: !GetAtt AQPExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          def lambda_handler(event, context):
+              return {'statusCode': 200, 'body': json.dumps('Data Ingestion Ready')}
+      Timeout: 300
+      MemorySize: 1024
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          DATA_BUCKET: !Ref DataBucket
+
+  # ========================================
+  # API GATEWAY
+  # ========================================
+  
+  RestAPI:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub 'aqp-api-${Environment}'
+      Description: 'Agentic Quantitative Platform API'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      ApiKeySourceType: HEADER
+
+  ApiGatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestAPI
+      ParentId: !GetAtt RestAPI.RootResourceId
+      PathPart: 'strategy'
+
+  AnalyzeResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestAPI
+      ParentId: !Ref ApiGatewayResource
+      PathPart: 'analyze'
+
+  AnalyzeMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestAPI
+      ResourceId: !Ref AnalyzeResource
+      HttpMethod: POST
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StrategyAnalysisFunction.Arn}/invocations'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - AnalyzeMethod
+    Properties:
+      RestApiId: !Ref RestAPI
+      StageName: !Ref Environment
+
+  # ========================================
+  # ECS CLUSTER FOR HEAVY COMPUTE
+  # ========================================
+  
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub 'aqp-cluster-${Environment}'
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+        - CapacityProvider: FARGATE_SPOT
+          Weight: 2
+
+  BacktestingTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub 'aqp-backtesting-${Environment}'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 4096  # 4 vCPUs
+      Memory: 16384  # 16 GB
+      ExecutionRoleArn: !GetAtt AQPExecutionRole.Arn
+      TaskRoleArn: !GetAtt AQPExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: backtesting-container
+          Image: 'python:3.9-slim'  # Would be replaced with custom image
+          Essential: true
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref BacktestingLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: ENVIRONMENT
+              Value: !Ref Environment
+            - Name: DATA_BUCKET
+              Value: !Ref DataBucket
+            - Name: RESULTS_BUCKET
+              Value: !Ref ResultsBucket
+
+  BacktestingLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/ecs/aqp-backtesting-${Environment}'
+      RetentionInDays: 14
+
+  # ========================================
+  # SNS & SQS
+  # ========================================
+  
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'aqp-notifications-${Environment}'
+      DisplayName: 'AQP System Notifications'
+
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref NotificationTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  ProcessingQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'aqp-processing-${Environment}'
+      VisibilityTimeoutSeconds: 900
+      MessageRetentionPeriod: 1209600  # 14 days
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  DeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub 'aqp-dlq-${Environment}'
+      MessageRetentionPeriod: 1209600
+
+  # ========================================
+  # CLOUDWATCH ALARMS
+  # ========================================
+  
+  HighErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'aqp-high-error-rate-${Environment}'
+      AlarmDescription: 'High error rate in AQP system'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref NotificationTopic
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref StrategyAnalysisFunction
+
+  HighLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'aqp-high-latency-${Environment}'
+      AlarmDescription: 'High latency in strategy analysis'
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 600000  # 10 minutes
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref NotificationTopic
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref StrategyAnalysisFunction
+
+# ========================================
+# OUTPUTS
+# ========================================
+
+Outputs:
+  APIEndpoint:
+    Description: 'API Gateway endpoint URL'
+    Value: !Sub 'https://${RestAPI}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-api-endpoint'
+
+  DataBucketName:
+    Description: 'S3 bucket for market data'
+    Value: !Ref DataBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-data-bucket'
+
+  ResultsBucketName:
+    Description: 'S3 bucket for results'
+    Value: !Ref ResultsBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-results-bucket'
+
+  JobsTableName:
+    Description: 'DynamoDB table for job tracking'
+    Value: !Ref JobsTable
+    Export:
+      Name: !Sub '${AWS::StackName}-jobs-table'
+
+  NotificationTopicArn:
+    Description: 'SNS topic for notifications'
+    Value: !Ref NotificationTopic
+    Export:
+      Name: !Sub '${AWS::StackName}-notification-topic'
+
+  ECSClusterArn:
+    Description: 'ECS cluster for heavy compute workloads'
+    Value: !GetAtt ECSCluster.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ecs-cluster'
