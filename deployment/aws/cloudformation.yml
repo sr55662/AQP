@@ -1,0 +1,4 @@
+# AWS CloudFormation Templates and Deployment Scripts
+# [IMPORT NEEDED FROM PREVIOUS SESSION]
+# Import artifact: aws-infrastructure
+# This file should contain AWS infrastructure setup

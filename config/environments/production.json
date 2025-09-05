@@ -1,0 +1,10 @@
+{
+  "environment": "production",
+  "target_sharpe": 2.0,
+  "num_strategies": 6,
+  "max_drawdown_limit": 0.08,
+  "correlation_threshold": 0.6,
+  "monitoring_enabled": true,
+  "auto_rebalance": true,
+  "rebalance_frequency_hours": 24
+}

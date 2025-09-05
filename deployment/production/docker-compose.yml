@@ -1,0 +1,4 @@
+# Production Deployment Configuration for AQP Sharpe >2.0 System
+# [CURRENT SESSION ARTIFACT - AVAILABLE]
+# This file contains the complete Docker production setup
+# Import from current session artifacts: production-deployment-config

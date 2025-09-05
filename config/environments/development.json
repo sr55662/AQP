@@ -1,0 +1,10 @@
+{
+  "environment": "development",
+  "target_sharpe": 2.0,
+  "num_strategies": 4,
+  "max_drawdown_limit": 0.10,
+  "correlation_threshold": 0.7,
+  "monitoring_enabled": true,
+  "auto_rebalance": false,
+  "rebalance_frequency_hours": 6
+}
