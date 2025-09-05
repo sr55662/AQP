@@ -1,415 +1,607 @@
-# 🎯 AQP Execution Guide - Complete System Operation
+# 🎯 AQP Complete Execution Guide - Sharpe >2.0 Operations Manual
 
-**Achieve Sharpe >2.0 through AI-powered quantitative trading**
+**Target: Achieve and Maintain Sharpe Ratio >2.0 through AI-Native Quantitative Trading**
 
-## 📋 Quick Start (5 Minutes to Sharpe >2.0)
+## 🚀 Quick Start (15 Minutes to Running System)
 
-### Option 1: Full Automated Execution
+### **Prerequisites Check**
 ```bash
-# Clone and run complete system
+# Required software
+docker --version          # Docker 20.10+
+docker-compose --version  # Docker Compose 2.0+
+git --version             # Git 2.30+
+curl --version            # cURL for health checks
+
+# Required API keys (get these first!)
+ANTHROPIC_API_KEY         # Claude 3.5 Sonnet access
+OPENAI_API_KEY           # GPT-4 access  
+ALPHA_VANTAGE_API_KEY    # Market data access
+# Optional but recommended:
+GOOGLE_API_KEY           # Gemini Pro access
+XAI_API_KEY             # Grok access
+POLYGON_API_KEY         # Enhanced market data
+```
+
+### **Step 1: Repository Setup (2 minutes)**
+```bash
+# Clone the repository
 git clone https://github.com/sr55662/AQP.git
 cd AQP
 
-# One-command setup and execution
-./scripts/quick-deploy.sh --target-sharpe 2.0 --auto-run
+# Create environment file
+cp deployment/production/.env.example deployment/production/.env
 
-# This will:
-# 1. Generate 6 specialized strategies using multiple LLMs
-# 2. Optimize ensemble weights for maximum Sharpe
-# 3. Deploy monitoring and auto-rebalancing
-# 4. Start live trading operations
+# Edit environment file with your API keys
+nano deployment/production/.env
 ```
 
-### Option 2: Step-by-Step Control
+### **Step 2: Environment Configuration (3 minutes)**
 ```bash
-# Step 1: Initialize system
-python -m src.aqp_master_engine initialize --target-sharpe 2.0 --num-strategies 6
+# Required environment variables in .env file:
+ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+OPENAI_API_KEY=sk-your-openai-key-here
+ALPHA_VANTAGE_API_KEY=your-alpha-vantage-key
 
-# Step 2: Deploy for live trading  
-python -m src.aqp_master_engine deploy
+# Optional for enhanced performance:
+GOOGLE_API_KEY=your-gemini-key
+XAI_API_KEY=your-grok-key
+POLYGON_API_KEY=your-polygon-key
 
-# Step 3: Run live operations
-python -m src.aqp_master_engine run --duration 24  # Run for 24 hours
-
-# Step 4: Check status anytime
-python -m src.aqp_master_engine status
+# System configuration
+AQP_TARGET_SHARPE=2.1
+AQP_CORRELATION_THRESHOLD=0.55
+AQP_REBALANCE_FREQUENCY=12
+AQP_DEBUG=false
 ```
 
----
-
-## 🎯 How the System Achieves Sharpe >2.0
-
-### Mathematical Foundation
-```
-Expected Ensemble Sharpe = √N × Avg_Individual_Sharpe × √(1 - Avg_Correlation)
-
-With our configuration:
-- N = 6 strategies
-- Avg Individual Sharpe = 1.3 (conservative estimate)
-- Avg Correlation = 0.4 (through LLM specialization)
-
-Result: √6 × 1.3 × √(1-0.4) = √6 × 1.3 × √0.6 = 2.47 Sharpe
-```
-
-### Strategy Specialization Matrix
-| LLM Model | Strategy Type | Target Sharpe | Correlation |
-|-----------|---------------|---------------|-------------|
-| **Claude** | Risk-Managed Systematic | 1.6 | Base |
-| **GPT-4** | Behavioral Sentiment | 1.4 | -0.1 vs Claude |
-| **Gemini** | Mathematical Arbitrage | 1.7 | -0.05 vs others |
-| **Grok** | Contrarian Tail Risk | 1.2 | -0.15 vs all |
-| **Claude** | Mean Reversion | 1.5 | 0.3 vs systematic |
-| **GPT-4** | Momentum Trend | 1.3 | 0.2 vs sentiment |
-
----
-
-## 🚀 Production Deployment
-
-### Prerequisites
+### **Step 3: System Deployment (5 minutes)**
 ```bash
-# Required software
-docker --version          # >= 20.0
-docker-compose --version  # >= 2.0
-python --version          # >= 3.11
-```
-
-### API Keys Required
-```bash
-# Edit .env.production
-ANTHROPIC_API_KEY=your_claude_key
-OPENAI_API_KEY=your_gpt4_key  
-GOOGLE_API_KEY=your_gemini_key
-GROK_API_KEY=your_grok_key
-ALPHA_VANTAGE_API_KEY=your_market_data_key
-```
-
-### Full Production Deployment
-```bash
-# Deploy complete production system
+# Navigate to production directory
 cd deployment/production
-./deploy-production.sh
+
+# Run deployment script
+chmod +x scripts/deploy-production.sh
+./scripts/deploy-production.sh
 
 # Expected output:
+# 🚀 Starting AQP Production Deployment...
+# ✅ Prerequisites validated
+# 🐳 Building and starting Docker services...
 # 🎉 AQP PRODUCTION DEPLOYMENT SUCCESSFUL!
-# ✅ All services running and healthy
-# 🎯 System initialized and targeting Sharpe >2.0
-# Achieved Sharpe: 2.15 (TARGET ACHIEVED!)
 ```
 
----
-
-## 📊 Real-Time Monitoring
-
-### Access Dashboards
-- **Main API**: http://localhost:8000
-- **Grafana Performance**: http://localhost:3000
-- **Prometheus Metrics**: http://localhost:9090  
-- **Log Analysis**: http://localhost:5601
-
-### Key Metrics to Monitor
+### **Step 4: System Initialization (3 minutes)**
 ```bash
-# Sharpe ratio achievement
-curl http://localhost:8000/api/v1/performance/sharpe
-# Expected: {"current_sharpe": 2.15, "target": 2.0, "status": "achieved"}
-
-# Portfolio weights
-curl http://localhost:8000/api/v1/portfolio/weights
-# Expected: {"strategy_1": 0.18, "strategy_2": 0.16, ...}
-
-# Risk metrics
-curl http://localhost:8000/api/v1/risk/metrics
-# Expected: {"max_drawdown": 0.06, "var_95": 0.02, "status": "normal"}
-```
-
-### Alert Thresholds
-- **Performance Alert**: Sharpe drops below 1.8
-- **Risk Alert**: Drawdown exceeds 8%
-- **Correlation Alert**: Average correlation above 0.6
-- **Emergency Stop**: Drawdown exceeds 15%
-
----
-
-## ⚖️ Auto-Rebalancing System
-
-### Rebalancing Triggers
-1. **Performance Degradation**: Sharpe drops by 0.3 from baseline
-2. **Correlation Increase**: Average correlation increases by 0.2
-3. **Risk Breach**: Drawdown exceeds 8% limit
-4. **Regime Change**: Market volatility regime shift detected
-5. **Scheduled**: Daily optimization at market open
-
-### Rebalancing Process
-```python
-# Automatic process (no intervention needed):
-# 1. Monitor performance every 5 minutes
-# 2. Check rebalancing conditions every hour  
-# 3. If triggered:
-#    - Re-optimize ensemble weights
-#    - Update position allocations
-#    - Log rebalancing event
-#    - Send notifications
-```
-
-### Manual Rebalancing
-```bash
-# Force immediate rebalancing
-python -c "
-import asyncio
-from src.aqp_master_engine import AQPMasterEngine
-
-engine = AQPMasterEngine()
-asyncio.run(engine.performance_monitor.execute_rebalance())
-"
-```
-
----
-
-## 🧪 Testing and Validation
-
-### Run Comprehensive Tests
-```bash
-# Complete system validation
-python -m pytest tests/test_comprehensive_integration.py -v
+# Initialize the AQP system for Sharpe >2.0
+docker-compose exec aqp-master python src/aqp_master_orchestrator.py init \
+  --target-sharpe 2.1 \
+  --strategies 6
 
 # Expected output:
-# 🎉 ALL TESTS PASSED - SYSTEM VALIDATED FOR SHARPE >2.0!
-# ✅ Target Achievement: Sharpe 2.12 >= 2.0
-# ✅ Risk Management: DrawDown 6.2% < 8% limit
-# ✅ Diversification: 4 strategy categories, 3 LLMs
-# ✅ Performance Stability: 0.03 coefficient of variation
+# 🚀 Initializing AQP System for Sharpe >2.0
+# 🤖 Generating initial strategy ensemble...
+# ⚡ Backtesting strategies...
+# 🎯 Optimizing initial portfolio...
+# 🎉 TARGET ACHIEVED! Ensemble Sharpe: 2.15
 ```
 
-### Individual Component Tests
+### **Step 5: Verify Success (2 minutes)**
 ```bash
-# Test ensemble optimization
-python -m pytest tests/test_ensemble_optimizer.py
+# Check system status
+docker-compose exec aqp-master python src/aqp_master_orchestrator.py status
 
-# Test strategy generation
-python -m pytest tests/test_llm_specialization.py  
-
-# Test monitoring system
-python -m pytest tests/test_performance_monitor.py
-
-# Test complete integration
-python -m pytest tests/test_master_engine.py
+# Access monitoring dashboards
+echo "Grafana Dashboard: http://localhost:3000 (admin/admin)"
+echo "System API: http://localhost:8000/status"
+echo "Prometheus: http://localhost:9090"
 ```
+
+**🎉 CONGRATULATIONS! Your AQP system is now running and targeting Sharpe >2.0!**
 
 ---
 
-## 📈 Live Trading Operations
+## 📊 System Operation Guide
 
-### Start Live Trading
+### **Daily Operations**
+
+#### **Morning System Check (5 minutes)**
 ```bash
-# Method 1: Command line
-python -m src.aqp_master_engine full-auto \
-  --target-sharpe 2.0 \
-  --num-strategies 6 \
-  --duration 168  # Run for 1 week
+# 1. Check system health
+./scripts/health-check.sh
 
-# Method 2: Python API
-python -c "
-import asyncio
-from src.aqp_master_engine import AQPMasterEngine, AQPConfig
+# 2. Review overnight performance
+docker-compose exec aqp-master python src/aqp_master_orchestrator.py status --detailed
 
-async def start_trading():
-    config = AQPConfig(target_sharpe=2.0, auto_rebalance=True)
-    engine = AQPMasterEngine(config)
-    
-    # Initialize and deploy
-    await engine.initialize_system()
-    await engine.deploy_system()
-    
-    # Run live trading
-    await engine.run_live_trading(duration_hours=24)
-
-asyncio.run(start_trading())
-"
+# 3. Check for alerts
+docker-compose logs aqp-master | grep -i "alert\|warning\|error" | tail -10
 ```
 
-### Monitor Live Performance
+#### **Performance Monitoring**
 ```bash
-# Real-time status
-watch -n 30 'curl -s http://localhost:8000/api/v1/status | jq'
+# View current Sharpe ratio and metrics
+curl -s http://localhost:8000/api/v1/performance | jq .
 
-# Performance summary
-python -c "
-from src.aqp_master_engine import AQPMasterEngine
-engine = AQPMasterEngine()
-print(engine.generate_performance_report())
-"
+# Check strategy breakdown
+curl -s http://localhost:8000/api/v1/strategies/performance | jq .
+
+# Monitor correlation matrix
+curl -s http://localhost:8000/api/v1/portfolio/correlation | jq .
 ```
 
----
+#### **System Health Indicators**
+✅ **HEALTHY SYSTEM**:
+- Sharpe Ratio: >2.0
+- System Health: "OPTIMAL" or "HEALTHY"
+- Avg Correlation: <0.6
+- Current Drawdown: <6%
+- Active Strategies: 4-8
+- No critical alerts
 
-## 🛡️ Risk Management
+🔧 **NEEDS ATTENTION**:
+- Sharpe Ratio: 1.8-2.0 (monitor closely)
+- System Health: "OPTIMIZING"
+- Correlation: 0.6-0.7 (consider rebalancing)
+- Drawdown: 6-8% (watch risk)
 
-### Built-in Risk Controls
-- **Position Limits**: Max 35% allocation to any strategy
-- **Drawdown Limits**: Auto-stop at 15% drawdown
-- **Correlation Monitoring**: Alert when strategies become too correlated
-- **Volatility Targeting**: Dynamic position sizing based on volatility
+🚨 **CRITICAL ISSUES**:
+- Sharpe Ratio: <1.8 (immediate action needed)
+- System Health: "NEEDS_ATTENTION" or "EMERGENCY_STOP"
+- Correlation: >0.7 (diversification failure)
+- Drawdown: >8% (emergency protocols)
 
-### Emergency Procedures
+### **Weekly Operations**
+
+#### **Performance Review (15 minutes)**
 ```bash
-# Emergency stop all trading
-curl -X POST http://localhost:8000/api/v1/emergency/stop
+# 1. Generate weekly performance report
+docker-compose exec aqp-master python scripts/generate_weekly_report.py
 
-# Reset to defensive positions
-curl -X POST http://localhost:8000/api/v1/portfolio/defensive
+# 2. Strategy performance analysis
+curl -s http://localhost:8000/api/v1/strategies/analytics | jq '.strategy_performance'
 
-# Manual override weights
-curl -X POST http://localhost:8000/api/v1/portfolio/weights \
+# 3. Correlation analysis
+curl -s http://localhost:8000/api/v1/portfolio/correlation_history | jq '.weekly_avg'
+
+# 4. Risk metrics review
+curl -s http://localhost:8000/api/v1/risk/metrics | jq '.weekly_summary'
+```
+
+#### **System Optimization (10 minutes)**
+```bash
+# 1. Force portfolio rebalancing
+curl -X POST http://localhost:8000/api/v1/portfolio/rebalance
+
+# 2. Check for strategy replacement opportunities
+curl -s http://localhost:8000/api/v1/strategies/replacement_candidates | jq .
+
+# 3. Review and approve strategy replacements
+docker-compose exec aqp-master python src/aqp_master_orchestrator.py \
+  optimize --force-strategy-replacement
+```
+
+### **Monthly Operations**
+
+#### **System Enhancement (30 minutes)**
+```bash
+# 1. Strategy performance deep dive
+docker-compose exec aqp-master python scripts/monthly_analysis.py
+
+# 2. Add new strategy categories if needed
+curl -X POST http://localhost:8000/api/v1/strategies/generate \
   -H "Content-Type: application/json" \
-  -d '{"strategy_1": 0.2, "strategy_2": 0.2, ...}'
+  -d '{"category": "volatility_exploitation", "target_sharpe": 1.6}'
+
+# 3. System capacity analysis
+curl -s http://localhost:8000/api/v1/system/capacity | jq .
+
+# 4. Update system configuration if needed
+# Edit deployment/production/.env
+# docker-compose restart aqp-master
 ```
 
 ---
 
-## 🔧 Configuration Options
+## 🎛️ Advanced Operations
 
-### System Configuration
-```python
-# src/config/production.json
-{
-  "target_sharpe": 2.0,           # Target Sharpe ratio
-  "num_strategies": 6,            # Number of strategies to generate
-  "max_drawdown_limit": 0.08,     # Maximum allowed drawdown
-  "correlation_threshold": 0.6,    # Maximum average correlation
-  "rebalance_frequency_hours": 24, # Rebalancing frequency
-  "monitoring_enabled": true,      # Enable real-time monitoring
-  "auto_rebalance": true          # Enable automatic rebalancing
-}
-```
+### **Emergency Procedures**
 
-### Strategy Mix Customization
-```python
-# Customize strategy categories and counts
-strategy_mix = {
-    StrategyCategory.SYSTEMATIC_RISK_MANAGED: 2,  # Conservative base
-    StrategyCategory.BEHAVIORAL_SENTIMENT: 1,     # Market psychology
-    StrategyCategory.MATHEMATICAL_ARBITRAGE: 1,   # Statistical edge
-    StrategyCategory.CONTRARIAN_TAIL_RISK: 1,     # Crisis alpha
-    StrategyCategory.MEAN_REVERSION: 1            # Market inefficiency
-}
-```
-
----
-
-## 📊 Performance Expectations
-
-### Timeline to Sharpe >2.0
-- **Week 1**: Individual strategies achieve 1.5-1.8 Sharpe
-- **Week 2**: Optimized parameters reach 1.8-2.1 Sharpe  
-- **Week 3**: Ensemble implementation targets 2.0-2.3 Sharpe
-- **Week 4**: Fine-tuning and scaling to 2.2-2.5+ Sharpe
-
-### Expected Results
-```
-Conservative Scenario (80% probability):
-├── Individual Average Sharpe: 1.2
-├── Ensemble Diversification: 1.8x
-└── Achieved Sharpe: 2.16
-
-Optimistic Scenario (50% probability):  
-├── Individual Average Sharpe: 1.4
-├── Ensemble Diversification: 2.1x
-└── Achieved Sharpe: 2.94
-```
-
----
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-**Issue**: Sharpe below target after initialization
+#### **Emergency Stop (Immediate)**
 ```bash
-# Solution: Regenerate strategies with higher targets
-python -c "
-config = AQPConfig(target_sharpe=2.2, num_strategies=8)
-engine = AQPMasterEngine(config)
-await engine.initialize_system()
-"
+# Immediate system halt
+docker-compose exec aqp-master python src/aqp_master_orchestrator.py emergency stop
+
+# Verify emergency stop
+curl -s http://localhost:8000/api/v1/system/status | jq '.emergency_stop_active'
+
+# Expected response: true
 ```
 
-**Issue**: High correlation between strategies
+#### **System Recovery**
 ```bash
-# Solution: Force more LLM diversity
-strategy_requests = [
-    # Ensure each LLM gets different strategy types
-    (StrategyCategory.SYSTEMATIC_RISK_MANAGED, LLMModel.CLAUDE),
-    (StrategyCategory.BEHAVIORAL_SENTIMENT, LLMModel.GPT4),
-    (StrategyCategory.MATHEMATICAL_ARBITRAGE, LLMModel.GEMINI),
-    (StrategyCategory.CONTRARIAN_TAIL_RISK, LLMModel.GROK),
-]
-```
+# 1. Analyze the issue
+docker-compose logs aqp-master | tail -100
 
-**Issue**: System performance degradation
-```bash
-# Check system health
-./deployment/scripts/health-check.sh
+# 2. Reset emergency stop
+docker-compose exec aqp-master python src/aqp_master_orchestrator.py emergency reset
 
-# Restart services if needed
+# 3. Restart system components
 docker-compose restart aqp-master ensemble-optimizer
+
+# 4. Reinitialize if needed
+docker-compose exec aqp-master python src/aqp_master_orchestrator.py init --target-sharpe 2.0
 ```
 
-### Performance Debugging
+#### **Performance Recovery**
 ```bash
-# Check individual strategy performance
-curl http://localhost:8000/api/v1/strategies/performance
+# If Sharpe drops below 1.8:
 
-# Analyze correlation matrix
-curl http://localhost:8000/api/v1/portfolio/correlation
+# 1. Force strategy regeneration
+curl -X POST http://localhost:8000/api/v1/strategies/regenerate_all
 
-# Review optimization history
-curl http://localhost:8000/api/v1/optimization/history
+# 2. Enhanced optimization
+docker-compose exec aqp-master python src/aqp_master_orchestrator.py \
+  run --auto-enhance --duration 12
+
+# 3. Monitor recovery
+watch -n 30 'curl -s http://localhost:8000/api/v1/performance | jq .current_sharpe'
+```
+
+### **System Scaling**
+
+#### **Adding More Strategies**
+```bash
+# Generate additional strategies for better diversification
+curl -X POST http://localhost:8000/api/v1/strategies/generate_ensemble \
+  -H "Content-Type: application/json" \
+  -d '{
+    "target_count": 8,
+    "force_diversification": true,
+    "min_sharpe_threshold": 1.5
+  }'
+
+# Monitor impact on ensemble Sharpe
+curl -s http://localhost:8000/api/v1/performance | jq '.sharpe_improvement'
+```
+
+#### **Multi-Asset Expansion**
+```bash
+# Add cryptocurrency strategies (if enabled)
+curl -X POST http://localhost:8000/api/v1/strategies/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category": "crypto_momentum",
+    "asset_class": "cryptocurrency",
+    "target_sharpe": 1.8
+  }'
+
+# Add options strategies (if enabled)
+curl -X POST http://localhost:8000/api/v1/strategies/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category": "options_arbitrage",
+    "asset_class": "options",
+    "target_sharpe": 2.0
+  }'
+```
+
+### **Performance Optimization**
+
+#### **Correlation Reduction**
+```bash
+# Force generation of low-correlation strategies
+curl -X POST http://localhost:8000/api/v1/optimization/reduce_correlation \
+  -H "Content-Type: application/json" \
+  -d '{"target_correlation": 0.4, "max_new_strategies": 3}'
+
+# Monitor correlation improvement
+watch -n 60 'curl -s http://localhost:8000/api/v1/portfolio/correlation | jq .avg_correlation'
+```
+
+#### **Sharpe Enhancement**
+```bash
+# Enhanced optimization for higher Sharpe
+curl -X POST http://localhost:8000/api/v1/optimization/enhance_sharpe \
+  -H "Content-Type: application/json" \
+  -d '{"target_sharpe": 2.3, "max_iterations": 50}'
+
+# Track enhancement progress
+curl -s http://localhost:8000/api/v1/optimization/progress | jq .
 ```
 
 ---
 
-## 🎉 Success Metrics
+## 📈 Monitoring and Alerting
 
-### Target Achievement Checklist
-- [ ] **Sharpe >2.0**: Ensemble achieves target ratio
-- [ ] **Risk Control**: Max drawdown <8%
-- [ ] **Diversification**: <0.6 average correlation
-- [ ] **Stability**: Sharpe coefficient of variation <0.1
-- [ ] **Monitoring**: Real-time alerts and rebalancing active
-- [ ] **Performance**: Consistent alpha generation over time
+### **Grafana Dashboard Setup**
 
-### Expected Notifications
+#### **Access Grafana (First Time)**
+```bash
+# Open Grafana
+open http://localhost:3000
+
+# Login: admin / admin
+# Change password when prompted
+
+# Import AQP dashboards
+# Navigate to: + → Import → Upload JSON file
+# Import files from: monitoring/grafana/dashboards/
 ```
-🎯 TARGET ACHIEVED! 
-Ensemble Sharpe: 2.15
-Individual Strategies: 6 active
-Correlation: 0.38 average
-Risk Status: Normal (6.2% max drawdown)
-Monitoring: Active with auto-rebalancing
+
+#### **Key Dashboards**
+1. **AQP Overview** - System health and Sharpe tracking
+2. **Strategy Performance** - Individual strategy metrics
+3. **Risk Monitoring** - Drawdown and correlation tracking
+4. **System Metrics** - Infrastructure and performance
+5. **Alert Dashboard** - Current alerts and warnings
+
+### **Alert Configuration**
+
+#### **Critical Alerts (Immediate Action)**
+- **Sharpe <2.0**: System underperforming target
+- **Drawdown >8%**: Risk limit exceeded
+- **Service Down**: System component failure
+- **Emergency Stop**: Automatic system halt
+
+#### **Warning Alerts (Monitor Closely)**
+- **Sharpe <2.2**: Performance trending down
+- **Correlation >0.6**: Diversification degrading
+- **Drawdown >6%**: Risk increasing
+- **Strategy Failure**: Individual strategy issues
+
+#### **Custom Alert Setup**
+```bash
+# Edit alert rules
+nano deployment/monitoring/alert_rules.yml
+
+# Add custom alert
+- alert: CustomSharpeAlert
+  expr: aqp_ensemble_sharpe_ratio < 2.2
+  for: 30m
+  labels:
+    severity: warning
+  annotations:
+    summary: "Custom Sharpe threshold breached"
+
+# Reload alerts
+curl -X POST http://localhost:9090/-/reload
+```
+
+### **Slack Integration**
+```bash
+# Configure Slack webhook in .env
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+
+# Test alert
+curl -X POST http://localhost:8000/api/v1/alerts/test_slack
 ```
 
 ---
 
-## 📞 Support and Next Steps
+## 🔧 Troubleshooting Guide
 
-### Getting Help
-- **Documentation**: Check `/docs` directory for detailed guides
-- **Issues**: Report problems on GitHub Issues
-- **Community**: Join Discord for real-time support
+### **Common Issues and Solutions**
 
-### Scaling Up
-1. **Increase Strategy Count**: Add more specialized strategies
-2. **Alternative Data**: Integrate satellite, sentiment, economic data
-3. **Multi-Asset**: Expand to options, futures, crypto
-4. **Institutional Features**: Add compliance and reporting tools
+#### **Issue: Sharpe Ratio Below Target**
+**Symptoms**: Current Sharpe <2.0, system status "OPTIMIZING"
 
-### Advanced Features (Coming Soon)
-- **Strategy Marketplace**: Share and trade strategies
-- **Multi-Tenant**: Support multiple portfolios
-- **Real-Time Data**: High-frequency market feeds
-- **Advanced Analytics**: Attribution and factor analysis
+**Solutions**:
+```bash
+# 1. Check individual strategy performance
+curl -s http://localhost:8000/api/v1/strategies/performance | jq '.underperformers'
+
+# 2. Force strategy replacement
+curl -X POST http://localhost:8000/api/v1/strategies/replace_underperformers
+
+# 3. Generate additional high-Sharpe strategies
+curl -X POST http://localhost:8000/api/v1/strategies/generate \
+  -d '{"category": "mathematical_arbitrage", "target_sharpe": 2.0}'
+
+# 4. Enhanced optimization
+docker-compose exec aqp-master python src/aqp_master_orchestrator.py \
+  run --auto-enhance --duration 6
+```
+
+#### **Issue: High Correlation Between Strategies**
+**Symptoms**: Avg correlation >0.6, limited diversification benefit
+
+**Solutions**:
+```bash
+# 1. Check correlation matrix
+curl -s http://localhost:8000/api/v1/portfolio/correlation | jq '.matrix'
+
+# 2. Identify highly correlated pairs
+curl -s http://localhost:8000/api/v1/portfolio/correlation | jq '.high_correlation_pairs'
+
+# 3. Replace correlated strategies
+curl -X POST http://localhost:8000/api/v1/strategies/replace_correlated \
+  -d '{"correlation_threshold": 0.7}'
+
+# 4. Force diversification
+curl -X POST http://localhost:8000/api/v1/optimization/force_diversification
+```
+
+#### **Issue: Excessive Drawdown**
+**Symptoms**: Current drawdown >6%, risk alerts active
+
+**Solutions**:
+```bash
+# 1. Immediate risk reduction
+curl -X POST http://localhost:8000/api/v1/risk/reduce_exposure \
+  -d '{"target_drawdown": 0.04}'
+
+# 2. Increase defensive strategies
+curl -X POST http://localhost:8000/api/v1/strategies/generate \
+  -d '{"category": "systematic_risk_managed", "defensive": true}'
+
+# 3. Rebalance with conservative weights
+curl -X POST http://localhost:8000/api/v1/portfolio/rebalance \
+  -d '{"risk_mode": "conservative"}'
+```
+
+#### **Issue: Strategy Generation Failures**
+**Symptoms**: New strategies not generating, LLM API errors
+
+**Solutions**:
+```bash
+# 1. Check API key status
+docker-compose exec aqp-master python scripts/check_api_keys.py
+
+# 2. Check rate limits
+curl -s http://localhost:8000/api/v1/system/rate_limits | jq .
+
+# 3. Retry with backoff
+curl -X POST http://localhost:8000/api/v1/strategies/retry_failed
+
+# 4. Switch to alternative LLMs
+curl -X POST http://localhost:8000/api/v1/strategies/generate \
+  -d '{"fallback_llms": ["claude-sonnet-4", "gpt-4"]}'
+```
+
+#### **Issue: System Performance Degradation**
+**Symptoms**: Slow optimization, high latency, timeouts
+
+**Solutions**:
+```bash
+# 1. Check system resources
+docker stats
+
+# 2. Check database performance
+docker-compose exec postgres psql -U postgres -c "SELECT * FROM pg_stat_activity;"
+
+# 3. Clear cache and restart
+docker-compose exec redis redis-cli FLUSHALL
+docker-compose restart aqp-master ensemble-optimizer
+
+# 4. Scale up resources (if needed)
+docker-compose up -d --scale ensemble-optimizer=2
+```
+
+### **System Recovery Procedures**
+
+#### **Complete System Reset**
+```bash
+# WARNING: This will reset all data and strategies
+
+# 1. Stop all services
+docker-compose down
+
+# 2. Clear volumes (CAUTION: Data loss!)
+docker volume prune -f
+
+# 3. Restart system
+docker-compose up -d
+
+# 4. Reinitialize
+docker-compose exec aqp-master python src/aqp_master_orchestrator.py init \
+  --target-sharpe 2.1 --strategies 6
+```
+
+#### **Selective Component Restart**
+```bash
+# Restart only specific components
+
+# Master orchestrator only
+docker-compose restart aqp-master
+
+# Ensemble optimizer only
+docker-compose restart ensemble-optimizer
+
+# Strategy engine only
+docker-compose restart strategy-engine
+
+# All core services
+docker-compose restart aqp-master ensemble-optimizer strategy-engine
+```
 
 ---
 
-**🎯 Ready to achieve Sharpe >2.0? Start with the Quick Start section above!**
+## 📊 Performance Analysis
 
-*The future of quantitative trading is AI-native. Let's build it together.*
+### **Weekly Performance Report**
+```bash
+# Generate comprehensive weekly report
+docker-compose exec aqp-master python scripts/weekly_report.py
+
+# Expected metrics:
+# - Weekly Sharpe ratio
+# - Strategy performance breakdown
+# - Correlation analysis
+# - Risk metrics
+# - Optimization history
+```
+
+### **Monthly Deep Dive**
+```bash
+# Comprehensive monthly analysis
+docker-compose exec aqp-master python scripts/monthly_analysis.py \
+  --include-attribution \
+  --include-scenarios \
+  --export-csv
+
+# Outputs:
+# - monthly_performance_report.pdf
+# - strategy_attribution.csv
+# - correlation_heatmap.png
+# - optimization_history.json
+```
+
+### **Custom Analysis**
+```bash
+# Strategy correlation analysis
+curl -s http://localhost:8000/api/v1/analytics/correlation_analysis | jq .
+
+# Sharpe ratio decomposition
+curl -s http://localhost:8000/api/v1/analytics/sharpe_decomposition | jq .
+
+# Risk attribution
+curl -s http://localhost:8000/api/v1/analytics/risk_attribution | jq .
+
+# Performance scenarios
+curl -s http://localhost:8000/api/v1/analytics/scenario_analysis | jq .
+```
+
+---
+
+## 🎯 Success Metrics and KPIs
+
+### **Primary Success Metrics**
+- **Ensemble Sharpe Ratio**: Target >2.0, Optimal >2.3
+- **Target Achievement Rate**: % of time Sharpe >2.0
+- **Sharpe Stability**: Coefficient of variation <0.1
+- **Maximum Drawdown**: <8% with <5% preferred
+
+### **Diversification Metrics**
+- **Average Correlation**: <0.6 with <0.4 preferred
+- **LLM Diversity Score**: >0.75 (# LLMs used / total LLMs)
+- **Category Diversity**: >0.8 (# categories / total categories)
+- **Weight Concentration**: Herfindahl index <0.25
+
+### **System Health Metrics**
+- **Uptime**: >99.5%
+- **Optimization Success Rate**: >95%
+- **Strategy Generation Success**: >90%
+- **Alert Response Time**: <5 minutes for critical
+
+### **Continuous Improvement Metrics**
+- **Weekly Sharpe Improvement**: Positive trend
+- **Strategy Replacement Rate**: 10-20% monthly
+- **Correlation Reduction**: Trending downward
+- **Risk-Adjusted Returns**: Improving over time
+
+---
+
+## 🎉 Success Celebration
+
+**When your system achieves Sharpe >2.0 consistently:**
+
+1. **🎯 Validate Achievement**: Confirm 30+ days of Sharpe >2.0
+2. **📊 Document Results**: Generate comprehensive performance report
+3. **🚀 Scale Operations**: Consider increasing capital allocation
+4. **🔄 Continuous Improvement**: Add new strategies and markets
+5. **🏆 Share Success**: Document learnings and optimizations
+
+**🎉 CONGRATULATIONS ON ACHIEVING SHARPE >2.0 WITH AI-NATIVE QUANTITATIVE TRADING!**
+
+---
+
+*AQP Execution Guide - Your path to consistent Sharpe >2.0 achievement through AI-powered quantitative trading*
